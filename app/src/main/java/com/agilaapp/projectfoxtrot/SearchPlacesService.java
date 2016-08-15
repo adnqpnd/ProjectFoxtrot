@@ -19,6 +19,20 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class SearchPlacesService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
@@ -28,7 +42,8 @@ public class SearchPlacesService extends Service implements
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
-    private AppSharedPreference appSharedPreference;
+    private AppSharedPreference mAppSharedPreference;
+    private NetworkManager mNetworkManager;
 
     public SearchPlacesService() {
     }
@@ -47,9 +62,11 @@ public class SearchPlacesService extends Service implements
                     .build();
 
             mGoogleApiClient.connect();
-
-            appSharedPreference = AppSharedPreference.getInstance(getApplicationContext());
         }
+
+        mAppSharedPreference = AppSharedPreference.getInstance(getApplicationContext());
+        mNetworkManager = NetworkManager.getInstance();
+
 
         if(mLastLocation == null){
             mLocationRequest = new LocationRequest();
@@ -120,14 +137,14 @@ public class SearchPlacesService extends Service implements
         if (mLastLocation != null) {
             Toast.makeText(this,"Long: " + mLastLocation.getLongitude() + ", Lat: " + mLastLocation.getLatitude(),Toast.LENGTH_LONG).show();
 
-            if(appSharedPreference.isLastLocationLatNotEmpty() && appSharedPreference.isLastLocationLongNotEmpty()){
+            if(mAppSharedPreference.isLastLocationLatNotEmpty() && mAppSharedPreference.isLastLocationLongNotEmpty()){
                 Log.d(TAG, "onLocationChanged: not appSharedPreference.isSearchEmpty() ");
                 Location location1 = new Location("");
-                location1.setLatitude(appSharedPreference.getLastLocationLat());
-                location1.setLongitude(appSharedPreference.getLastLocationLong());
+                location1.setLatitude(mAppSharedPreference.getLastLocationLat());
+                location1.setLongitude(mAppSharedPreference.getLastLocationLong());
 
-                Log.d(TAG, "onLocationChanged: appReference saved lat " + appSharedPreference.getLastLocationLat());
-                Log.d(TAG, "onLocationChanged: appReference saved long " + appSharedPreference.getLastLocationLong());
+                Log.d(TAG, "onLocationChanged: appReference saved lat " + mAppSharedPreference.getLastLocationLat());
+                Log.d(TAG, "onLocationChanged: appReference saved long " + mAppSharedPreference.getLastLocationLong());
                 Log.d(TAG, "onLocationChanged: lat " + mLastLocation.getLatitude());
                 Log.d(TAG, "onLocationChanged: long " + mLastLocation.getLongitude());
 
@@ -139,13 +156,58 @@ public class SearchPlacesService extends Service implements
 
                 Log.d(TAG, "onLocationChanged: distance l1 to l2: " +  location1.distanceTo(location2));
 
-                appSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
-                appSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
+                mAppSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
+                mAppSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
+
+                float distance = location1.distanceTo(location2);
+
+                if(201 > 200){
+
+                    Log.d(TAG, "onLocationChanged: request for new places");
+
+                    RequestBody body = new FormBody.Builder()
+                            .add("latitude",String.valueOf(mLastLocation.getLatitude()))
+                            .add("longitude",String.valueOf(mLastLocation.getLongitude()))
+                            .add("radius", "500")
+                            .add("type", "Shopping_mall")
+                            .build();
+
+//                    MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+//                    String params = "{\"latitude\":"+mLastLocation.getLatitude()+",\"longitude\":"+mLastLocation.getLongitude()+",\"radius\":"+500+",\"type\":"+"bakery"+"}";
+//                    RequestBody body = RequestBody.create(JSON, params);
+
+                    Request request = new Request.Builder()
+                            .url("https://foxtrot-app.herokuapp.com/api/places")
+                            .post(body)
+                            .build();
+
+                    mNetworkManager.getOkHttpClient().newCall(request).enqueue(new Callback() {
+                        @Override
+                        public void onFailure(Call call, IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        @Override
+                        public void onResponse(Call call, Response response) throws IOException {
+                            if (!response.isSuccessful()) {
+                                throw new IOException("Unexpected code " + response);
+                            }else {
+                                try {
+                                    String responseData = response.body().string();
+                                    JSONArray jsonArray = new JSONArray(responseData);
+                                    Log.d(TAG, "onLocationChanged new places onResponse: " + jsonArray);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    });
+                }
 
             }else{
                 Log.d(TAG, "onLocationChanged: appSharedPreference.isSearchEmpty() ");
-                appSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
-                appSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
+                mAppSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
+                mAppSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
                 //TODO call api using long lat
             }
 
