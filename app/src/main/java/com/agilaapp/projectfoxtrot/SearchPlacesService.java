@@ -13,6 +13,11 @@ import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -24,14 +29,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.FormBody;
-import okhttp3.MediaType;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 public class SearchPlacesService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
@@ -44,6 +44,7 @@ public class SearchPlacesService extends Service implements
     private LocationRequest mLocationRequest;
     private AppSharedPreference mAppSharedPreference;
     private NetworkManager mNetworkManager;
+    private int radius = 500;
 
     public SearchPlacesService() {
     }
@@ -65,7 +66,7 @@ public class SearchPlacesService extends Service implements
         }
 
         mAppSharedPreference = AppSharedPreference.getInstance(getApplicationContext());
-        mNetworkManager = NetworkManager.getInstance();
+        mNetworkManager = NetworkManager.getInstance(this);
 
 
         if(mLastLocation == null){
@@ -165,43 +166,69 @@ public class SearchPlacesService extends Service implements
 
                     Log.d(TAG, "onLocationChanged: request for new places");
 
-                    RequestBody body = new FormBody.Builder()
-                            .add("latitude",String.valueOf(mLastLocation.getLatitude()))
-                            .add("longitude",String.valueOf(mLastLocation.getLongitude()))
-                            .add("radius", "500")
-                            .add("type", "Shopping_mall")
-                            .build();
+                    String url = "https://foxtrot-app.herokuapp.com/api/places?lat="+mLastLocation.getLatitude()
+                            +"&lng="+mLastLocation.getLongitude()+"&radius="+radius+"&query=Mercury Drug";
 
-//                    MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-//                    String params = "{\"latitude\":"+mLastLocation.getLatitude()+",\"longitude\":"+mLastLocation.getLongitude()+",\"radius\":"+500+",\"type\":"+"bakery"+"}";
-//                    RequestBody body = RequestBody.create(JSON, params);
+                    Log.d(TAG, "onLocationChanged: url: " + url );
 
-                    Request request = new Request.Builder()
-                            .url("https://foxtrot-app.herokuapp.com/api/places")
-                            .post(body)
-                            .build();
-
-                    mNetworkManager.getOkHttpClient().newCall(request).enqueue(new Callback() {
-                        @Override
-                        public void onFailure(Call call, IOException e) {
-                            e.printStackTrace();
-                        }
-
-                        @Override
-                        public void onResponse(Call call, Response response) throws IOException {
-                            if (!response.isSuccessful()) {
-                                throw new IOException("Unexpected code " + response);
-                            }else {
-                                try {
-                                    String responseData = response.body().string();
-                                    JSONArray jsonArray = new JSONArray(responseData);
-                                    Log.d(TAG, "onLocationChanged new places onResponse: " + jsonArray);
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
+                    JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
+                            new Response.Listener<JSONObject>()
+                            {
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    // display response
+                                    Log.d("Response", response.toString());
+                                }
+                            },
+                            new Response.ErrorListener()
+                            {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    Log.d("Error.Response", ""+error);
                                 }
                             }
-                        }
-                    });
+                    );
+
+                    mNetworkManager.addToRequestQueue(jsonObjectRequest);
+
+
+//                    RequestBody body = new FormBody.Builder()
+//                            .add("latitude",String.valueOf(mLastLocation.getLatitude()))
+//                            .add("longitude",String.valueOf(mLastLocation.getLongitude()))
+//                            .add("radius", "500")
+//                            .add("type", "Shopping_mall")
+//                            .build();
+//
+////                    MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+////                    String params = "{\"latitude\":"+mLastLocation.getLatitude()+",\"longitude\":"+mLastLocation.getLongitude()+",\"radius\":"+500+",\"type\":"+"bakery"+"}";
+////                    RequestBody body = RequestBody.create(JSON, params);
+//
+//                    Request request = new Request.Builder()
+//                            .url("https://foxtrot-app.herokuapp.com/api/places")
+//                            .post(body)
+//                            .build();
+//
+//                    mNetworkManager.getOkHttpClient().newCall(request).enqueue(new Callback() {
+//                        @Override
+//                        public void onFailure(Call call, IOException e) {
+//                            e.printStackTrace();
+//                        }
+//
+//                        @Override
+//                        public void onResponse(Call call, Response response) throws IOException {
+//                            if (!response.isSuccessful()) {
+//                                throw new IOException("Unexpected code " + response);
+//                            }else {
+//                                try {
+//                                    String responseData = response.body().string();
+//                                    JSONArray jsonArray = new JSONArray(responseData);
+//                                    Log.d(TAG, "onLocationChanged new places onResponse: " + jsonArray);
+//                                } catch (JSONException e) {
+//                                    e.printStackTrace();
+//                                }
+//                            }
+//                        }
+//                    });
                 }
 
             }else{
