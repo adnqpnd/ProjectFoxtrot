@@ -31,8 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/linearLayoutSearchSwitch"
-        android:background="@android:color/black"
-        android:visibility="gone"
+        android:visibility="visible"
     />
 
     <TextView
@@ -40,7 +39,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="lat"
-        android:layout_below="@id/linearLayoutSearchSwitch"/>
+        android:layout_below="@id/linearLayoutSearchSwitch"
+        android:visibility="gone"/>
 
     <TextView
         android:id="@+id/textViewLong"
@@ -48,6 +48,7 @@
         android:layout_height="wrap_content"
         android:text="long"
         android:layout_below="@id/textViewLat"
+        android:visibility="gone"
         />
 
     <android.support.design.widget.FloatingActionButton

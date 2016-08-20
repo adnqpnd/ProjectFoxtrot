@@ -1,6 +1,7 @@
 package com.agilaapp.projectfoxtrot;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
@@ -11,10 +12,17 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,10 +41,14 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.realm.Realm;
+import io.realm.RealmResults;
 
 public class CheckListActivity extends AppCompatActivity{
     private static final String TAG = CheckListActivity.class.getSimpleName();
     private static final int REQUEST_CHECK_SETTINGS = 1;
+    private static final String checklistId = "checklistId";
+    private long checklistPrimaryKey;
 
     @BindView(R.id.floatingButtonChecklist)
     FloatingActionButton mFloatingButtonChecklist;
@@ -50,18 +62,42 @@ public class CheckListActivity extends AppCompatActivity{
     @BindView(R.id.textViewLong)
     TextView textViewLong;
 
+    @BindView(R.id.recyclerViewChecklist)
+    RecyclerView recyclerViewCheckList;
+
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
+    private Realm mRealm;
+    private RecyclerView.LayoutManager mLayoutManager;
+    private ChecklistAdapter checklistAdapter;
+
 
     private AppSharedPreference mAppSharedPreference;
+
+    public static Intent newInstance(Context context, long id){
+        Log.d(TAG, "newInstance id: " + id);
+        Intent intent = new Intent(context,CheckListActivity.class);
+        intent.putExtra(checklistId,id);
+        return intent;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_check_list);
         ButterKnife.bind(this);
+
+        if(getIntent() == null){
+            checklistPrimaryKey = getIntent().getLongExtra(checklistId,0);
+            Log.d(TAG, "onCreate checklistPrimaryKey: " + checklistPrimaryKey);
+        }else {
+            Log.d(TAG, "onCreate checklistPrimaryKey: none" + checklistPrimaryKey);
+        }
+
         mAppSharedPreference = AppSharedPreference.getInstance(getApplicationContext());
+
+        mRealm = Realm.getDefaultInstance();
 
 //        if (mGoogleApiClient == null) {
 //            mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -70,6 +106,31 @@ public class CheckListActivity extends AppCompatActivity{
 //                    .addApi(LocationServices.API)
 //                    .build();
 //        }
+
+        recyclerViewCheckList.setHasFixedSize(true);
+
+
+
+        mRealm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                Item item = realm.createObject(Item.class);
+                item.setId(1);
+                item.setLabel("Palaba ng damit");
+                item.setStatus(false);
+
+            }
+        });
+
+        RealmResults<Item> rr = mRealm.where(Item.class).findAll();
+
+
+        // use a linear layout manager
+        mLayoutManager = new LinearLayoutManager(this);
+        recyclerViewCheckList.setLayoutManager(mLayoutManager);
+
+        checklistAdapter = new ChecklistAdapter(rr);
+        recyclerViewCheckList.setAdapter(checklistAdapter);
 
         mFloatingButtonChecklist.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -217,4 +278,54 @@ public class CheckListActivity extends AppCompatActivity{
 //            textViewLong.setText(String.valueOf(mLastLocation.getLongitude()));
 //        }
 //    }
+
+    public class ChecklistAdapter extends RecyclerView.Adapter<ChecklistAdapter.ViewHolder> {
+        private RealmResults<Item> mItems;
+
+        // Provide a reference to the views for each data item
+        // Complex data items may need more than one view per item, and
+        // you provide access to all the views for a data item in a view holder
+        public class ViewHolder extends RecyclerView.ViewHolder {
+            // each data item is just a string in this case
+            public TextView mTextViewTodo;
+            public CheckBox mCheckboxTodo;
+
+            public ViewHolder(View v) {
+                super(v);
+                mTextViewTodo = (TextView) v.findViewById(R.id.textViewTodo);
+                mCheckboxTodo = (CheckBox) v.findViewById(R.id.checkBoxTodo);
+
+            }
+        }
+
+        // Provide a suitable constructor (depends on the kind of dataset)
+        public ChecklistAdapter(RealmResults<Item> items) {
+            mItems = items;
+        }
+
+        // Create new views (invoked by the layout manager)
+        @Override
+        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_todo, parent, false);
+            return new ViewHolder(v);
+        }
+
+        // Replace the contents of a view (invoked by the layout manager)
+        @Override
+        public void onBindViewHolder(ViewHolder holder, int position) {
+            // - get element from your dataset at this position
+            // - replace the contents of the view with that element
+            final long primaryId = mItems.get(position).getId();
+            holder.mTextViewTodo.setText(mItems.get(position).getLabel());
+            holder.mCheckboxTodo.setChecked(mItems.get(position).isDone());
+        }
+
+        // Return the size of your dataset (invoked by the layout manager)
+        @Override
+        public int getItemCount() {
+            return   mItems.size();
+        }
+
+    }
 }

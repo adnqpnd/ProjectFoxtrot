@@ -12,6 +12,8 @@ public class Item extends RealmObject {
     @Required
     private String label;
 
+    private boolean done;
+
     public long getId() {
         return id;
     }
@@ -26,5 +28,13 @@ public class Item extends RealmObject {
 
     public void setLabel(String label) {
         this.label = label;
+    }
+
+    public boolean isDone() {
+        return done;
+    }
+
+    public void setStatus(boolean done) {
+        this.done = done;
     }
 }

@@ -1,5 +1,6 @@
 package com.agilaapp.projectfoxtrot;
 
+import android.content.Intent;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -116,10 +118,12 @@ public class NoteActivity extends AppCompatActivity {
             // each data item is just a string in this case
             public TextView mNoteLabel;
             public Button mDeleteNoteButton;
+            public RelativeLayout mRelativeLayoutNote;
             public ViewHolder(View v) {
                 super(v);
                 mNoteLabel = (TextView) v.findViewById(R.id.noteLabel);
                 mDeleteNoteButton = (Button) v.findViewById(R.id.buttonDeleteNote);
+                mRelativeLayoutNote = (RelativeLayout) v.findViewById(R.id.relativeLayoutNote);
             }
         }
 
@@ -154,6 +158,14 @@ public class NoteActivity extends AppCompatActivity {
                             checkList.deleteFromRealm();
                         }
                     });
+                }
+            });
+            holder.mRelativeLayoutNote.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Log.d(TAG, "onClick primaryId: " + primaryId);
+                    Intent i = CheckListActivity.newInstance(NoteActivity.this,primaryId);
+                    startActivity(i);
                 }
             });
         }
