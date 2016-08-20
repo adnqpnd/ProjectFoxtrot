@@ -17,7 +17,9 @@ import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.facebook.stetho.common.Utf8Charset;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -29,6 +31,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -166,16 +170,23 @@ public class SearchPlacesService extends Service implements
 
                     Log.d(TAG, "onLocationChanged: request for new places");
 
-                    String url = "https://foxtrot-app.herokuapp.com/api/places?lat="+mLastLocation.getLatitude()
-                            +"&lng="+mLastLocation.getLongitude()+"&radius="+radius+"&query=Mercury Drug";
+                    String url = null;
+
+                    try {
+                        url = "https://foxtrot-app.herokuapp.com/api/places?lat="+mLastLocation.getLatitude()
+                                +"&lng="+mLastLocation.getLongitude()+"&radius="+radius+"&type="+ URLEncoder.encode("shopping_mall","utf-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+
 
                     Log.d(TAG, "onLocationChanged: url: " + url );
 
-                    JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
-                            new Response.Listener<JSONObject>()
+                    JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, url, null,
+                            new Response.Listener<JSONArray>()
                             {
                                 @Override
-                                public void onResponse(JSONObject response) {
+                                public void onResponse(JSONArray response) {
                                     // display response
                                     Log.d("Response", response.toString());
                                 }
