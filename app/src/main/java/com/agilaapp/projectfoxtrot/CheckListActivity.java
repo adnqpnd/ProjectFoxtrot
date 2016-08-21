@@ -39,9 +39,12 @@ import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStates;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import java.util.List;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
 
 public class CheckListActivity extends AppCompatActivity{
@@ -72,8 +75,11 @@ public class CheckListActivity extends AppCompatActivity{
     private RecyclerView.LayoutManager mLayoutManager;
     private ChecklistAdapter checklistAdapter;
 
+    Checklist mChecklist;
+
 
     private AppSharedPreference mAppSharedPreference;
+    private RealmChangeListener<Realm> mRealmChangeListener;
 
     public static Intent newInstance(Context context, long id){
         Log.d(TAG, "newInstance id: " + id);
@@ -88,7 +94,7 @@ public class CheckListActivity extends AppCompatActivity{
         setContentView(R.layout.activity_check_list);
         ButterKnife.bind(this);
 
-        if(getIntent() == null){
+        if (getIntent().hasExtra(checklistId)) {
             checklistPrimaryKey = getIntent().getLongExtra(checklistId,0);
             Log.d(TAG, "onCreate checklistPrimaryKey: " + checklistPrimaryKey);
         }else {
@@ -98,6 +104,7 @@ public class CheckListActivity extends AppCompatActivity{
         mAppSharedPreference = AppSharedPreference.getInstance(getApplicationContext());
 
         mRealm = Realm.getDefaultInstance();
+
 
 //        if (mGoogleApiClient == null) {
 //            mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -110,32 +117,36 @@ public class CheckListActivity extends AppCompatActivity{
         recyclerViewCheckList.setHasFixedSize(true);
 
 
-
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                Item item = realm.createObject(Item.class);
-                item.setId(1);
-                item.setLabel("Palaba ng damit");
-                item.setStatus(false);
-
-            }
-        });
-
-        RealmResults<Item> rr = mRealm.where(Item.class).findAll();
-
+        //RealmResults<Item> rr = mRealm.where(Item.class).findAll();
+        mChecklist = mRealm.where(Checklist.class).equalTo("id", checklistPrimaryKey).findFirst();
 
         // use a linear layout manager
         mLayoutManager = new LinearLayoutManager(this);
         recyclerViewCheckList.setLayoutManager(mLayoutManager);
 
-        checklistAdapter = new ChecklistAdapter(rr);
+        checklistAdapter = new ChecklistAdapter(mChecklist.getItems());
         recyclerViewCheckList.setAdapter(checklistAdapter);
 
         mFloatingButtonChecklist.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Toast.makeText(CheckListActivity.this, "Add item to list!!!", Toast.LENGTH_LONG).show();
+
+                int primaryKey = generateItemPrimaryKey(mRealm);
+                final Item item = new Item();
+                item.setId(primaryKey);
+                item.setLabel("Task #" + primaryKey);
+                item.setStatus(false);
+
+                mRealm.executeTransactionAsync(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        realm.copyToRealm(item);
+
+                        Checklist checklist = realm.where(Checklist.class).equalTo("id", checklistPrimaryKey).findFirst();
+                        checklist.getItems().add(item);
+                    }
+                });
             }
         });
 
@@ -159,7 +170,29 @@ public class CheckListActivity extends AppCompatActivity{
             }
         });
 
+        mRealmChangeListener = new RealmChangeListener<Realm>() {
+            @Override
+            public void onChange(Realm element) {
+                mChecklist = mRealm.where(Checklist.class).equalTo("id", checklistPrimaryKey).findFirst();
+                checklistAdapter.notifyDataSetChanged();
+            }
+        };
+
+        mRealm.addChangeListener(mRealmChangeListener);
+
         //createLocationRequest();
+    }
+
+    public int generateItemPrimaryKey(Realm realm) {
+        Log.d(TAG, "getChecklistNextKey: realm" + realm);
+        RealmResults<Item> list = realm.where(Item.class).findAll();
+
+        if (list.size() > 0) {
+            return realm.where(Item.class).findAll().max("id").intValue() + 1;
+        } else {
+            return 1;
+        }
+
     }
 
 //    @Override
@@ -280,7 +313,7 @@ public class CheckListActivity extends AppCompatActivity{
 //    }
 
     public class ChecklistAdapter extends RecyclerView.Adapter<ChecklistAdapter.ViewHolder> {
-        private RealmResults<Item> mItems;
+        private List<Item> mItems;
 
         // Provide a reference to the views for each data item
         // Complex data items may need more than one view per item, and
@@ -299,7 +332,7 @@ public class CheckListActivity extends AppCompatActivity{
         }
 
         // Provide a suitable constructor (depends on the kind of dataset)
-        public ChecklistAdapter(RealmResults<Item> items) {
+        public ChecklistAdapter(List<Item> items) {
             mItems = items;
         }
 
@@ -319,6 +352,18 @@ public class CheckListActivity extends AppCompatActivity{
             final long primaryId = mItems.get(position).getId();
             holder.mTextViewTodo.setText(mItems.get(position).getLabel());
             holder.mCheckboxTodo.setChecked(mItems.get(position).isDone());
+            holder.mCheckboxTodo.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, final boolean isChecked) {
+                    mRealm.executeTransactionAsync(new Realm.Transaction() {
+                        @Override
+                        public void execute(Realm realm) {
+                            Item item = realm.where(Item.class).equalTo("id", primaryId).findFirst();
+                            item.setStatus(isChecked);
+                        }
+                    });
+                }
+            });
         }
 
         // Return the size of your dataset (invoked by the layout manager)
