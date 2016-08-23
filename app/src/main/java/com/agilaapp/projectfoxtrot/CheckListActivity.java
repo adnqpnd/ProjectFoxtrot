@@ -130,23 +130,25 @@ public class CheckListActivity extends AppCompatActivity{
         mFloatingButtonChecklist.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(CheckListActivity.this, "Add item to list!!!", Toast.LENGTH_LONG).show();
-
-                int primaryKey = generateItemPrimaryKey(mRealm);
-                final Item item = new Item();
-                item.setId(primaryKey);
-                item.setLabel("Task #" + primaryKey);
-                item.setStatus(false);
-
-                mRealm.executeTransactionAsync(new Realm.Transaction() {
-                    @Override
-                    public void execute(Realm realm) {
-                        realm.copyToRealm(item);
-
-                        Checklist checklist = realm.where(Checklist.class).equalTo("id", checklistPrimaryKey).findFirst();
-                        checklist.getItems().add(item);
-                    }
-                });
+//                Toast.makeText(CheckListActivity.this, "Add item to list!!!", Toast.LENGTH_LONG).show();
+//
+//                int primaryKey = generateItemPrimaryKey(mRealm);
+//                final Item item = new Item();
+//                item.setId(primaryKey);
+//                item.setLabel("Task #" + primaryKey);
+//                item.setStatus(false);
+//
+//                mRealm.executeTransactionAsync(new Realm.Transaction() {
+//                    @Override
+//                    public void execute(Realm realm) {
+//                        realm.copyToRealm(item);
+//
+//                        Checklist checklist = realm.where(Checklist.class).equalTo("id", checklistPrimaryKey).findFirst();
+//                        checklist.getItems().add(item);
+//                    }
+//                });
+                Intent intent = new Intent(CheckListActivity.this, AddItemActivity.class);
+                startActivity(intent);
             }
         });
 
