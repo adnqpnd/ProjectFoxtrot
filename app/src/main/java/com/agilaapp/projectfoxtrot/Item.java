@@ -12,6 +12,10 @@ public class Item extends RealmObject {
     @Required
     private String label;
 
+    private boolean placeSearch;
+
+    private String placeName;
+
     private boolean done;
 
     public long getId() {
@@ -36,5 +40,21 @@ public class Item extends RealmObject {
 
     public void setStatus(boolean done) {
         this.done = done;
+    }
+
+    public boolean isPlaceSearch() {
+        return placeSearch;
+    }
+
+    public void setPlaceSearch(boolean placeSearch) {
+        this.placeSearch = placeSearch;
+    }
+
+    public String getPlaceName() {
+        return placeName;
+    }
+
+    public void setPlaceName(String placeName) {
+        this.placeName = placeName;
     }
 }

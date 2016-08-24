@@ -147,7 +147,7 @@ public class CheckListActivity extends AppCompatActivity{
 //                        checklist.getItems().add(item);
 //                    }
 //                });
-                Intent intent = new Intent(CheckListActivity.this, AddItemActivity.class);
+                Intent intent = AddItemActivity.newInstance(CheckListActivity.this, checklistPrimaryKey);
                 startActivity(intent);
             }
         });
@@ -183,18 +183,6 @@ public class CheckListActivity extends AppCompatActivity{
         mRealm.addChangeListener(mRealmChangeListener);
 
         //createLocationRequest();
-    }
-
-    public int generateItemPrimaryKey(Realm realm) {
-        Log.d(TAG, "getChecklistNextKey: realm" + realm);
-        RealmResults<Item> list = realm.where(Item.class).findAll();
-
-        if (list.size() > 0) {
-            return realm.where(Item.class).findAll().max("id").intValue() + 1;
-        } else {
-            return 1;
-        }
-
     }
 
 //    @Override
