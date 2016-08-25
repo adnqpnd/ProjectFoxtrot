@@ -57,4 +57,15 @@ public class Item extends RealmObject {
     public void setPlaceName(String placeName) {
         this.placeName = placeName;
     }
+
+    @Override
+    public String toString() {
+        return "Item{" +
+                "id=" + id +
+                ", label='" + label + '\'' +
+                ", placeSearch=" + placeSearch +
+                ", placeName='" + placeName + '\'' +
+                ", done=" + done +
+                '}';
+    }
 }

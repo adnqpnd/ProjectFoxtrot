@@ -163,7 +163,9 @@ public class CheckListActivity extends AppCompatActivity{
                 if (isChecked) {
                     Toast.makeText(CheckListActivity.this, "Enable!!!", Toast.LENGTH_LONG).show();
                     mAppSharedPreference.setSearch(true);
-                    startService( new Intent(CheckListActivity.this,SearchPlacesService.class));
+                    Intent i = new Intent(CheckListActivity.this, SearchPlacesService.class);
+                    i.putExtra(SearchPlacesService.checkListIdExtra, checklistPrimaryKey);
+                    startService(i);
                 } else {
                     Toast.makeText(CheckListActivity.this, "Disable!!!", Toast.LENGTH_LONG).show();
                     mAppSharedPreference.setSearch(false);
@@ -301,6 +303,13 @@ public class CheckListActivity extends AppCompatActivity{
 //            textViewLong.setText(String.valueOf(mLastLocation.getLongitude()));
 //        }
 //    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mRealm.removeChangeListener(mRealmChangeListener);
+        mRealm.close();
+    }
 
     public class ChecklistAdapter extends RecyclerView.Adapter<ChecklistAdapter.ViewHolder> {
         private List<Item> mItems;

@@ -36,6 +36,8 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.realm.Realm;
+
 
 public class SearchPlacesService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
@@ -49,6 +51,9 @@ public class SearchPlacesService extends Service implements
     private AppSharedPreference mAppSharedPreference;
     private NetworkManager mNetworkManager;
     private int radius = 500;
+    public final static String checkListIdExtra = "EXTRA_CHECKLIST_ID";
+    private long checkListId;
+    Realm mRealm;
 
     public SearchPlacesService() {
     }
@@ -58,6 +63,7 @@ public class SearchPlacesService extends Service implements
         super.onCreate();
 
         Log.d(TAG, "onCreate: ");
+        mRealm = Realm.getDefaultInstance();
 
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -85,10 +91,11 @@ public class SearchPlacesService extends Service implements
     @Override
     public void onDestroy() {
         super.onDestroy();
-
+        mRealm.close();
         Log.d(TAG, "onDestroy: ");
         stopLocationUpdates();
         mGoogleApiClient.disconnect();
+
     }
 
     protected void stopLocationUpdates() {
@@ -102,8 +109,11 @@ public class SearchPlacesService extends Service implements
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand: ");
-        
+        checkListId = intent.getLongExtra(checkListIdExtra, 0);
+        Log.d(TAG, "onStartCommand: checkListIdcheckListId " + checkListId);
         return super.onStartCommand(intent, flags, startId);
+
+
     }
 
     @Override
@@ -138,117 +148,91 @@ public class SearchPlacesService extends Service implements
 
     @Override
     public void onLocationChanged(Location location) {
-        mLastLocation = location;
-        if (mLastLocation != null) {
-            Toast.makeText(this,"Long: " + mLastLocation.getLongitude() + ", Lat: " + mLastLocation.getLatitude(),Toast.LENGTH_LONG).show();
 
-            if(mAppSharedPreference.isLastLocationLatNotEmpty() && mAppSharedPreference.isLastLocationLongNotEmpty()){
-                Log.d(TAG, "onLocationChanged: not appSharedPreference.isSearchEmpty() ");
-                Location location1 = new Location("");
-                location1.setLatitude(mAppSharedPreference.getLastLocationLat());
-                location1.setLongitude(mAppSharedPreference.getLastLocationLong());
+        if (checkListId != 0L) {
+            Checklist checklist = mRealm.where(Checklist.class).equalTo("id", checkListId).findFirst();
 
-                Log.d(TAG, "onLocationChanged: appReference saved lat " + mAppSharedPreference.getLastLocationLat());
-                Log.d(TAG, "onLocationChanged: appReference saved long " + mAppSharedPreference.getLastLocationLong());
-                Log.d(TAG, "onLocationChanged: lat " + mLastLocation.getLatitude());
-                Log.d(TAG, "onLocationChanged: long " + mLastLocation.getLongitude());
+            mLastLocation = location;
+            if (mLastLocation != null) {
+                Toast.makeText(this, "Long: " + mLastLocation.getLongitude() + ", Lat: " + mLastLocation.getLatitude(), Toast.LENGTH_LONG).show();
 
-                Location location2 = new Location("");
-                location2.setLatitude(mLastLocation.getLatitude());
-                location2.setLongitude(mLastLocation.getLongitude());
+                if (mAppSharedPreference.isLastLocationLatNotEmpty() && mAppSharedPreference.isLastLocationLongNotEmpty()) {
+                    Log.d(TAG, "onLocationChanged: not appSharedPreference.isSearchEmpty() ");
+                    Location location1 = new Location("");
+                    location1.setLatitude(mAppSharedPreference.getLastLocationLat());
+                    location1.setLongitude(mAppSharedPreference.getLastLocationLong());
 
-                //TODO call api using long lat then save new location
+                    Log.d(TAG, "onLocationChanged: appReference saved lat " + mAppSharedPreference.getLastLocationLat());
+                    Log.d(TAG, "onLocationChanged: appReference saved long " + mAppSharedPreference.getLastLocationLong());
+                    Log.d(TAG, "onLocationChanged: lat " + mLastLocation.getLatitude());
+                    Log.d(TAG, "onLocationChanged: long " + mLastLocation.getLongitude());
 
-                Log.d(TAG, "onLocationChanged: distance l1 to l2: " +  location1.distanceTo(location2));
+                    Location location2 = new Location("");
+                    location2.setLatitude(mLastLocation.getLatitude());
+                    location2.setLongitude(mLastLocation.getLongitude());
 
-                mAppSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
-                mAppSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
+                    //TODO call api using long lat then save new location
 
-                float distance = location1.distanceTo(location2);
+                    Log.d(TAG, "onLocationChanged: distance l1 to l2: " + location1.distanceTo(location2));
 
-                if(201 > 200){
+                    mAppSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
+                    mAppSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
 
-                    Log.d(TAG, "onLocationChanged: request for new places");
+                    float distance = location1.distanceTo(location2);
 
-                    String url = null;
+                    if (201 > 200) {
 
-                    try {
-                        url = "https://foxtrot-app.herokuapp.com/api/places?lat="+mLastLocation.getLatitude()
-                                +"&lng="+mLastLocation.getLongitude()+"&radius="+radius+"&type="+ URLEncoder.encode("shopping_mall","utf-8");
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
+                        Log.d(TAG, "onLocationChanged: request for new places");
+
+                        for (final Item item : checklist.getItems()) {
+                            Log.d(TAG, "onLocationChanged: " + item);
+
+                            if (item.isPlaceSearch() && !item.isDone()) {
+                                String url = null;
+
+                                try {
+                                    url = "https://foxtrot-app.herokuapp.com/api/places?lat=" + mLastLocation.getLatitude()
+                                            + "&lng=" + mLastLocation.getLongitude() + "&radius=" + radius + "&type=" + URLEncoder.encode(item.getPlaceName(), "utf-8");
+                                } catch (UnsupportedEncodingException e) {
+                                    e.printStackTrace();
+                                }
+
+
+                                Log.d(TAG, "onLocationChanged: url: " + url);
+
+                                JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, url, null,
+                                        new Response.Listener<JSONArray>() {
+                                            @Override
+                                            public void onResponse(JSONArray response) {
+                                                // display response
+                                                Log.d("Response", item.getId() + ": " + response.toString());
+                                            }
+                                        },
+                                        new Response.ErrorListener() {
+                                            @Override
+                                            public void onErrorResponse(VolleyError error) {
+                                                Log.d("Error.Response", "" + error);
+                                            }
+                                        }
+                                );
+
+                                mNetworkManager.addToRequestQueue(jsonObjectRequest);
+                                }
+
+
+                        }
+
+
                     }
 
-
-                    Log.d(TAG, "onLocationChanged: url: " + url );
-
-                    JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, url, null,
-                            new Response.Listener<JSONArray>()
-                            {
-                                @Override
-                                public void onResponse(JSONArray response) {
-                                    // display response
-                                    Log.d("Response", response.toString());
-                                }
-                            },
-                            new Response.ErrorListener()
-                            {
-                                @Override
-                                public void onErrorResponse(VolleyError error) {
-                                    Log.d("Error.Response", ""+error);
-                                }
-                            }
-                    );
-
-                    mNetworkManager.addToRequestQueue(jsonObjectRequest);
-
-
-//                    RequestBody body = new FormBody.Builder()
-//                            .add("latitude",String.valueOf(mLastLocation.getLatitude()))
-//                            .add("longitude",String.valueOf(mLastLocation.getLongitude()))
-//                            .add("radius", "500")
-//                            .add("type", "Shopping_mall")
-//                            .build();
-//
-////                    MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-////                    String params = "{\"latitude\":"+mLastLocation.getLatitude()+",\"longitude\":"+mLastLocation.getLongitude()+",\"radius\":"+500+",\"type\":"+"bakery"+"}";
-////                    RequestBody body = RequestBody.create(JSON, params);
-//
-//                    Request request = new Request.Builder()
-//                            .url("https://foxtrot-app.herokuapp.com/api/places")
-//                            .post(body)
-//                            .build();
-//
-//                    mNetworkManager.getOkHttpClient().newCall(request).enqueue(new Callback() {
-//                        @Override
-//                        public void onFailure(Call call, IOException e) {
-//                            e.printStackTrace();
-//                        }
-//
-//                        @Override
-//                        public void onResponse(Call call, Response response) throws IOException {
-//                            if (!response.isSuccessful()) {
-//                                throw new IOException("Unexpected code " + response);
-//                            }else {
-//                                try {
-//                                    String responseData = response.body().string();
-//                                    JSONArray jsonArray = new JSONArray(responseData);
-//                                    Log.d(TAG, "onLocationChanged new places onResponse: " + jsonArray);
-//                                } catch (JSONException e) {
-//                                    e.printStackTrace();
-//                                }
-//                            }
-//                        }
-//                    });
+                } else {
+                    Log.d(TAG, "onLocationChanged: appSharedPreference.isSearchEmpty() ");
+                    mAppSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
+                    mAppSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
+                    //TODO call api using long lat
                 }
 
-            }else{
-                Log.d(TAG, "onLocationChanged: appSharedPreference.isSearchEmpty() ");
-                mAppSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
-                mAppSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
-                //TODO call api using long lat
-            }
-
+                }
         }
     }
 }
