@@ -33,10 +33,13 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.realm.Realm;
+import io.realm.RealmList;
 
 
 public class SearchPlacesService extends Service implements
@@ -187,12 +190,14 @@ public class SearchPlacesService extends Service implements
                         for (final Item item : checklist.getItems()) {
                             Log.d(TAG, "onLocationChanged: " + item);
 
+                            final long itemId = item.getId();
+
                             if (item.isPlaceSearch() && !item.isDone()) {
                                 String url = null;
 
                                 try {
                                     url = "https://foxtrot-app.herokuapp.com/api/places?lat=" + mLastLocation.getLatitude()
-                                            + "&lng=" + mLastLocation.getLongitude() + "&radius=" + radius + "&type=" + URLEncoder.encode(item.getPlaceName(), "utf-8");
+                                            + "&lng=" + mLastLocation.getLongitude() + "&radius=" + radius + "&name=" + URLEncoder.encode(item.getPlaceName(), "utf-8");
                                 } catch (UnsupportedEncodingException e) {
                                     e.printStackTrace();
                                 }
@@ -203,9 +208,36 @@ public class SearchPlacesService extends Service implements
                                 JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, url, null,
                                         new Response.Listener<JSONArray>() {
                                             @Override
-                                            public void onResponse(JSONArray response) {
+                                            public void onResponse(final JSONArray response) {
                                                 // display response
-                                                Log.d("Response", item.getId() + ": " + response.toString());
+                                                Log.d("Response", itemId + ": " + response.toString());
+
+                                                //   item.setPlaces(placeList);
+
+                                                mRealm.executeTransactionAsync(new Realm.Transaction() {
+                                                    @Override
+                                                    public void execute(Realm realm) {
+
+                                                        for (int i = 0; i < response.length(); i++) {
+                                                            try {
+                                                                JSONObject jsonObject = response.getJSONObject(i);
+                                                                Place place = new Place();
+                                                                place.setId(jsonObject.getString("place_id"));
+                                                                place.setName(jsonObject.getString("name"));
+                                                                place.setLatitude(jsonObject.getDouble("lat"));
+                                                                place.setLongitude(jsonObject.getDouble("lng"));
+
+                                                                realm.copyToRealmOrUpdate(place);
+
+                                                                Item itemSelected = realm.where(Item.class).equalTo("id", itemId).findFirst();
+                                                                itemSelected.getPlaces().add(place);
+                                                            } catch (JSONException e) {
+                                                                e.printStackTrace();
+                                                            }
+
+                                                        }
+                                                    }
+                                                });
                                             }
                                         },
                                         new Response.ErrorListener() {

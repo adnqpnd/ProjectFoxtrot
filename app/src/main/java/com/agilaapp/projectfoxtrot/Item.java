@@ -1,6 +1,7 @@
 package com.agilaapp.projectfoxtrot;
 
 
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 import io.realm.annotations.Required;
@@ -17,6 +18,8 @@ public class Item extends RealmObject {
     private String placeName;
 
     private boolean done;
+
+    private RealmList<Place> places;
 
     public long getId() {
         return id;
@@ -56,6 +59,14 @@ public class Item extends RealmObject {
 
     public void setPlaceName(String placeName) {
         this.placeName = placeName;
+    }
+
+    public RealmList<Place> getPlaces() {
+        return places;
+    }
+
+    public void setPlaces(RealmList<Place> places) {
+        this.places = places;
     }
 
     @Override
