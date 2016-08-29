@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">ProjectFoxtrot</string>
     <string name="start_service_label">Enable Search:</string>
+    <string name="title_activity_item">ItemActivity</string>
 </resources>

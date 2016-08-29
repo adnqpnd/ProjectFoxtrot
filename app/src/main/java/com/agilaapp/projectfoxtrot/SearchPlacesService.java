@@ -218,6 +218,10 @@ public class SearchPlacesService extends Service implements
                                                     @Override
                                                     public void execute(Realm realm) {
 
+
+                                                        Item itemSelected = realm.where(Item.class).equalTo("id", itemId).findFirst();
+                                                        itemSelected.getPlaces().deleteAllFromRealm();
+
                                                         for (int i = 0; i < response.length(); i++) {
                                                             try {
                                                                 JSONObject jsonObject = response.getJSONObject(i);
@@ -228,8 +232,6 @@ public class SearchPlacesService extends Service implements
                                                                 place.setLongitude(jsonObject.getDouble("lng"));
 
                                                                 realm.copyToRealmOrUpdate(place);
-
-                                                                Item itemSelected = realm.where(Item.class).equalTo("id", itemId).findFirst();
                                                                 itemSelected.getPlaces().add(place);
                                                             } catch (JSONException e) {
                                                                 e.printStackTrace();

@@ -39,6 +39,8 @@ import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStates;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import org.w3c.dom.Text;
+
 import java.util.List;
 
 import butterknife.BindView;
@@ -177,6 +179,7 @@ public class CheckListActivity extends AppCompatActivity{
         mRealmChangeListener = new RealmChangeListener<Realm>() {
             @Override
             public void onChange(Realm element) {
+                Log.d(TAG, "onChange: new place?");
                 mChecklist = mRealm.where(Checklist.class).equalTo("id", checklistPrimaryKey).findFirst();
                 checklistAdapter.notifyDataSetChanged();
             }
@@ -321,12 +324,13 @@ public class CheckListActivity extends AppCompatActivity{
             // each data item is just a string in this case
             public TextView mTextViewTodo;
             public CheckBox mCheckboxTodo;
+            public TextView mTextViewSearchedLocationCount;
 
             public ViewHolder(View v) {
                 super(v);
                 mTextViewTodo = (TextView) v.findViewById(R.id.textViewTodo);
                 mCheckboxTodo = (CheckBox) v.findViewById(R.id.checkBoxTodo);
-
+                mTextViewSearchedLocationCount = (TextView) v.findViewById(R.id.textViewSearchedLocationCount);
             }
         }
 
@@ -351,6 +355,17 @@ public class CheckListActivity extends AppCompatActivity{
             final long primaryId = mItems.get(position).getId();
             holder.mTextViewTodo.setText(mItems.get(position).getLabel());
             holder.mCheckboxTodo.setChecked(mItems.get(position).isDone());
+
+
+            if (holder.mTextViewSearchedLocationCount.getVisibility() == View.GONE) {
+                if (mItems.get(position).getPlaces().size() != 0) {
+                    holder.mTextViewSearchedLocationCount.setVisibility(View.VISIBLE);
+                    holder.mTextViewSearchedLocationCount.setText(String.valueOf(mItems.get(position).getPlaces().size()));
+                }
+            } else {
+                holder.mTextViewSearchedLocationCount.setVisibility(View.GONE);
+            }
+
             holder.mCheckboxTodo.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, final boolean isChecked) {
