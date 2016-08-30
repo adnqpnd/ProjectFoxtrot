@@ -22,6 +22,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -325,12 +326,14 @@ public class CheckListActivity extends AppCompatActivity{
             public TextView mTextViewTodo;
             public CheckBox mCheckboxTodo;
             public TextView mTextViewSearchedLocationCount;
+            public LinearLayout mLinearLayoutTask;
 
             public ViewHolder(View v) {
                 super(v);
                 mTextViewTodo = (TextView) v.findViewById(R.id.textViewTodo);
                 mCheckboxTodo = (CheckBox) v.findViewById(R.id.checkBoxTodo);
                 mTextViewSearchedLocationCount = (TextView) v.findViewById(R.id.textViewSearchedLocationCount);
+                mLinearLayoutTask = (LinearLayout) v.findViewById(R.id.linearLayoutTask);
             }
         }
 
@@ -376,6 +379,14 @@ public class CheckListActivity extends AppCompatActivity{
                             item.setStatus(isChecked);
                         }
                     });
+                }
+            });
+
+            holder.mLinearLayoutTask.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent i = ItemActivity.newInstance(CheckListActivity.this, primaryId);
+                    startActivity(i);
                 }
             });
         }

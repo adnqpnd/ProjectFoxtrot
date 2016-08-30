@@ -23,7 +23,7 @@
             />
 
         <EditText
-            android:id="@+id/editTextTaskDescription"
+            android:id="@+id/editTextEditTaskDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
@@ -41,16 +41,17 @@
             />
 
         <android.support.v7.widget.SwitchCompat
-            android:id="@+id/switchLocationAwareness"
+            android:id="@+id/switchEditLocationAwareness"
             android:layout_weight="1"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            />
 
     </LinearLayout>
 
 
     <LinearLayout
-        android:id="@+id/linearLayoutPlaceName"
+        android:id="@+id/linearLayoutEditPlaceName"
         android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -62,9 +63,10 @@
             />
 
         <EditText
-            android:id="@+id/editLocationName"
+            android:id="@+id/editTextEditLocationName"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            />
 
     </LinearLayout>
 
@@ -74,14 +76,47 @@
         android:gravity="end">
 
         <Button
-            android:id="@+id/buttonAddTask"
+            android:id="@+id/buttonEditTask"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Edit"
-            android:enabled="false"
+            />
+
+        <Button
+            android:id="@+id/buttonSaveEdit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save"
+            android:visibility="gone"
+            />
+
+        <Button
+            android:id="@+id/buttonCancelEdit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:visibility="gone"
             />
 
     </LinearLayout>
+
+    <TextView
+        android:layout_marginTop="30dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:text="Places Searched"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_marginBottom="6dp"
+        android:background="#000000"/>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recyclerViewPlaceSearched"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
 
 </LinearLayout>
