@@ -155,6 +155,7 @@ public class NoteActivity extends AppCompatActivity {
                         @Override
                         public void execute(Realm realm) {
                             Checklist checkList =  realm.where(Checklist.class).equalTo("id",primaryId).findFirst();
+                            checkList.getItems().deleteAllFromRealm();
                             checkList.deleteFromRealm();
                         }
                     });

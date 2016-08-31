@@ -183,80 +183,9 @@ public class SearchPlacesService extends Service implements
 
                     float distance = location1.distanceTo(location2);
 
-                    if (201 > 200) {
-
+                    if (distance > 200) {
                         Log.d(TAG, "onLocationChanged: request for new places");
-
-                        for (final Item item : checklist.getItems()) {
-                            Log.d(TAG, "onLocationChanged: " + item);
-
-                            final long itemId = item.getId();
-
-                            if (item.isPlaceSearch() && !item.isDone()) {
-                                String url = null;
-
-                                try {
-                                    url = "https://foxtrot-app.herokuapp.com/api/places?lat=" + mLastLocation.getLatitude()
-                                            + "&lng=" + mLastLocation.getLongitude() + "&radius=" + radius + "&name=" + URLEncoder.encode(item.getPlaceName(), "utf-8");
-                                } catch (UnsupportedEncodingException e) {
-                                    e.printStackTrace();
-                                }
-
-
-                                Log.d(TAG, "onLocationChanged: url: " + url);
-
-                                JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, url, null,
-                                        new Response.Listener<JSONArray>() {
-                                            @Override
-                                            public void onResponse(final JSONArray response) {
-                                                // display response
-                                                Log.d("Response", itemId + ": " + response.toString());
-
-                                                //   item.setPlaces(placeList);
-
-                                                mRealm.executeTransactionAsync(new Realm.Transaction() {
-                                                    @Override
-                                                    public void execute(Realm realm) {
-
-
-                                                        Item itemSelected = realm.where(Item.class).equalTo("id", itemId).findFirst();
-                                                        itemSelected.getPlaces().deleteAllFromRealm();
-
-                                                        for (int i = 0; i < response.length(); i++) {
-                                                            try {
-                                                                JSONObject jsonObject = response.getJSONObject(i);
-                                                                Place place = new Place();
-                                                                place.setId(jsonObject.getString("place_id"));
-                                                                place.setName(jsonObject.getString("name"));
-                                                                place.setLatitude(jsonObject.getDouble("lat"));
-                                                                place.setLongitude(jsonObject.getDouble("lng"));
-
-                                                                realm.copyToRealmOrUpdate(place);
-                                                                itemSelected.getPlaces().add(place);
-                                                            } catch (JSONException e) {
-                                                                e.printStackTrace();
-                                                            }
-
-                                                        }
-                                                    }
-                                                });
-                                            }
-                                        },
-                                        new Response.ErrorListener() {
-                                            @Override
-                                            public void onErrorResponse(VolleyError error) {
-                                                Log.d("Error.Response", "" + error);
-                                            }
-                                        }
-                                );
-
-                                mNetworkManager.addToRequestQueue(jsonObjectRequest);
-                                }
-
-
-                        }
-
-
+                        searchForPlaces(checklist);
                     }
 
                 } else {
@@ -264,9 +193,81 @@ public class SearchPlacesService extends Service implements
                     mAppSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
                     mAppSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
                     //TODO call api using long lat
+                    searchForPlaces(checklist);
                 }
 
+            }
+        }
+    }
+
+    private void searchForPlaces(Checklist checklist) {
+        for (final Item item : checklist.getItems()) {
+            Log.d(TAG, "onLocationChanged: " + item);
+
+            final long itemId = item.getId();
+
+            if (item.isPlaceSearch() && !item.isDone()) {
+                String url = null;
+
+                try {
+                    url = "https://foxtrot-app.herokuapp.com/api/places?lat=" + mLastLocation.getLatitude()
+                            + "&lng=" + mLastLocation.getLongitude() + "&radius=" + radius + "&name=" + URLEncoder.encode(item.getPlaceName(), "utf-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
                 }
+
+
+                Log.d(TAG, "onLocationChanged: url: " + url);
+
+                JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, url, null,
+                        new Response.Listener<JSONArray>() {
+                            @Override
+                            public void onResponse(final JSONArray response) {
+                                // display response
+                                Log.d("Response", itemId + ": " + response.toString());
+
+                                //   item.setPlaces(placeList);
+
+                                mRealm.executeTransactionAsync(new Realm.Transaction() {
+                                    @Override
+                                    public void execute(Realm realm) {
+
+
+                                        Item itemSelected = realm.where(Item.class).equalTo("id", itemId).findFirst();
+                                        itemSelected.getPlaces().deleteAllFromRealm();
+
+                                        for (int i = 0; i < response.length(); i++) {
+                                            try {
+                                                JSONObject jsonObject = response.getJSONObject(i);
+                                                Place place = new Place();
+                                                place.setId(jsonObject.getString("place_id"));
+                                                place.setName(jsonObject.getString("name"));
+                                                place.setLatitude(jsonObject.getDouble("lat"));
+                                                place.setLongitude(jsonObject.getDouble("lng"));
+
+                                                realm.copyToRealmOrUpdate(place);
+                                                itemSelected.getPlaces().add(place);
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+
+                                        }
+                                    }
+                                });
+                            }
+                        },
+                        new Response.ErrorListener() {
+                            @Override
+                            public void onErrorResponse(VolleyError error) {
+                                Log.d("Error.Response", "" + error);
+                            }
+                        }
+                );
+
+                mNetworkManager.addToRequestQueue(jsonObjectRequest);
+            }
+
+
         }
     }
 }
