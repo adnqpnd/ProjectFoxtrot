@@ -12,6 +12,8 @@ public class Checklist extends RealmObject {
     @Required
     private String name;
 
+    private boolean enableSearchPlace;
+
     private RealmList<Item> items;
 
     public long getId() {
@@ -36,6 +38,14 @@ public class Checklist extends RealmObject {
 
     public void setItems(RealmList<Item> items) {
         this.items = items;
+    }
+
+    public boolean isEnableSearchPlace() {
+        return enableSearchPlace;
+    }
+
+    public void setEnableSearchPlace(boolean enableSearchPlace) {
+        this.enableSearchPlace = enableSearchPlace;
     }
 
     @Override

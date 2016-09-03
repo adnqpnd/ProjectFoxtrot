@@ -77,6 +77,7 @@ public class CheckListActivity extends AppCompatActivity{
     private Realm mRealm;
     private RecyclerView.LayoutManager mLayoutManager;
     private ChecklistAdapter checklistAdapter;
+    private boolean isEnabledSearch;
 
     Checklist mChecklist;
 
@@ -360,11 +361,9 @@ public class CheckListActivity extends AppCompatActivity{
             holder.mCheckboxTodo.setChecked(mItems.get(position).isDone());
 
 
-            if (holder.mTextViewSearchedLocationCount.getVisibility() == View.GONE) {
-                if (mItems.get(position).getPlaces().size() != 0) {
-                    holder.mTextViewSearchedLocationCount.setVisibility(View.VISIBLE);
-                    holder.mTextViewSearchedLocationCount.setText(String.valueOf(mItems.get(position).getPlaces().size()));
-                }
+            if (mItems.get(position).getPlaces().size() != 0) {
+                holder.mTextViewSearchedLocationCount.setVisibility(View.VISIBLE);
+                holder.mTextViewSearchedLocationCount.setText(String.valueOf(mItems.get(position).getPlaces().size()));
             } else {
                 holder.mTextViewSearchedLocationCount.setVisibility(View.GONE);
             }
