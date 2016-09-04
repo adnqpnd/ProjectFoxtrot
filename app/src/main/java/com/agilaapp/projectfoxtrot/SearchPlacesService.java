@@ -5,6 +5,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
@@ -40,6 +41,7 @@ import java.util.Map;
 
 import io.realm.Realm;
 import io.realm.RealmList;
+import io.realm.RealmResults;
 
 
 public class SearchPlacesService extends Service implements
@@ -57,6 +59,8 @@ public class SearchPlacesService extends Service implements
     public final static String checkListIdExtra = "EXTRA_CHECKLIST_ID";
     private long checkListId;
     Realm mRealm;
+
+    private final IBinder mBinder = new LocalBinder();
 
     public SearchPlacesService() {
     }
@@ -114,15 +118,27 @@ public class SearchPlacesService extends Service implements
         Log.d(TAG, "onStartCommand: ");
         checkListId = intent.getLongExtra(checkListIdExtra, 0);
         Log.d(TAG, "onStartCommand: checkListIdcheckListId " + checkListId);
-        return super.onStartCommand(intent, flags, startId);
-
-
+        return START_STICKY;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
+        Log.d(TAG, "onBind: ");
+        checkListId = intent.getLongExtra(checkListIdExtra, 0);
+        Log.d(TAG, "onBind: checkListIdcheckListId " + checkListId);
         // TODO: Return the communication channel to the service.
-        throw new UnsupportedOperationException("Not yet implemented");
+        return mBinder;
+    }
+
+    public void printHelloWorld() {
+        Log.d(TAG, "printHelloWorld: ");
+    }
+
+    public class LocalBinder extends Binder {
+        SearchPlacesService getService() {
+            // Return this instance of LocalService so clients can call public methods
+            return SearchPlacesService.this;
+        }
     }
 
     @Override
@@ -152,18 +168,25 @@ public class SearchPlacesService extends Service implements
     @Override
     public void onLocationChanged(Location location) {
 
-        if (checkListId != 0L) {
-            Checklist checklist = mRealm.where(Checklist.class).equalTo("id", checkListId).findFirst();
+        Log.d(TAG, "onLocationChanged: ");
 
+        //if (checkListId != 0L) {
+        // Checklist checklist = mRealm.where(Checklist.class).equalTo("id", checkListId).findFirst();
+        RealmResults<Checklist> checklists = mRealm.where(Checklist.class).equalTo("enableSearchPlace", true).findAll();
+
+        Log.d(TAG, "onLocationChanged: checklists size " + checklists.size());
+
+        for (Checklist checklist : checklists) {
+            final long checkListPrimaryKey = checklist.getId();
             mLastLocation = location;
             if (mLastLocation != null) {
                 Toast.makeText(this, "Long: " + mLastLocation.getLongitude() + ", Lat: " + mLastLocation.getLatitude(), Toast.LENGTH_LONG).show();
 
-                if (mAppSharedPreference.isLastLocationLatNotEmpty() && mAppSharedPreference.isLastLocationLongNotEmpty()) {
+                if (checklist.getLatitude() != null && checklist.getLongitude() != null) {
                     Log.d(TAG, "onLocationChanged: not appSharedPreference.isSearchEmpty() ");
                     Location location1 = new Location("");
-                    location1.setLatitude(mAppSharedPreference.getLastLocationLat());
-                    location1.setLongitude(mAppSharedPreference.getLastLocationLong());
+                    location1.setLatitude(checklist.getLatitude());
+                    location1.setLongitude(checklist.getLongitude());
 
                     Log.d(TAG, "onLocationChanged: appReference saved lat " + mAppSharedPreference.getLastLocationLat());
                     Log.d(TAG, "onLocationChanged: appReference saved long " + mAppSharedPreference.getLastLocationLong());
@@ -183,21 +206,29 @@ public class SearchPlacesService extends Service implements
 
                     float distance = location1.distanceTo(location2);
 
-                    if (distance > 200) {
+                    if (201 > 200) {
                         Log.d(TAG, "onLocationChanged: request for new places");
                         searchForPlaces(checklist);
                     }
 
                 } else {
                     Log.d(TAG, "onLocationChanged: appSharedPreference.isSearchEmpty() ");
-                    mAppSharedPreference.setLastLocationLat(Double.doubleToLongBits(mLastLocation.getLatitude()));
-                    mAppSharedPreference.setLastLocationLong(Double.doubleToLongBits(mLastLocation.getLongitude()));
-                    //TODO call api using long lat
-                    searchForPlaces(checklist);
-                }
+                    mRealm.executeTransaction(new Realm.Transaction() {
+                        @Override
+                        public void execute(Realm realm) {
+                            Checklist checklist = realm.where(Checklist.class).equalTo("id", checkListPrimaryKey).findFirst();
+                            checklist.setLatitude(mLastLocation.getLatitude());
+                            checklist.setLongitude(mLastLocation.getLongitude());
+                        }
+                    });
 
+                    //TODO call api using long lat
+                        searchForPlaces(checklist);
+                    }
+
+                }
             }
-        }
+        // }
     }
 
     private void searchForPlaces(Checklist checklist) {

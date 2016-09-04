@@ -31,6 +31,12 @@
         </activity>
         <activity android:name=".ItemActivity">
         </activity>
+
+        <service
+            android:name=".SearchPlacesBoundService"
+            android:enabled="true"
+            android:exported="false">
+        </service>
     </application>
 
 </manifest>

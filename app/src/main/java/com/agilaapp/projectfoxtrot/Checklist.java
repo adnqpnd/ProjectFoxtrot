@@ -14,6 +14,9 @@ public class Checklist extends RealmObject {
 
     private boolean enableSearchPlace;
 
+    private Double latitude;
+    private Double longitude;
+
     private RealmList<Item> items;
 
     public long getId() {
@@ -46,6 +49,22 @@ public class Checklist extends RealmObject {
 
     public void setEnableSearchPlace(boolean enableSearchPlace) {
         this.enableSearchPlace = enableSearchPlace;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 
     @Override

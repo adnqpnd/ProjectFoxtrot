@@ -1,11 +1,14 @@
 package com.agilaapp.projectfoxtrot;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -85,6 +88,26 @@ public class CheckListActivity extends AppCompatActivity{
     private AppSharedPreference mAppSharedPreference;
     private RealmChangeListener<Realm> mRealmChangeListener;
 
+    SearchPlacesService mService;
+    boolean mBound = false;
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            SearchPlacesService.LocalBinder binder = (SearchPlacesService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBound = false;
+        }
+    };
+
     public static Intent newInstance(Context context, long id){
         Log.d(TAG, "newInstance id: " + id);
         Intent intent = new Intent(context,CheckListActivity.class);
@@ -129,6 +152,7 @@ public class CheckListActivity extends AppCompatActivity{
         recyclerViewCheckList.setLayoutManager(mLayoutManager);
 
         checklistAdapter = new ChecklistAdapter(mChecklist.getItems());
+        isEnabledSearch = mChecklist.isEnableSearchPlace();
         recyclerViewCheckList.setAdapter(checklistAdapter);
 
         mFloatingButtonChecklist.setOnClickListener(new View.OnClickListener() {
@@ -156,25 +180,42 @@ public class CheckListActivity extends AppCompatActivity{
             }
         });
 
-        if(mAppSharedPreference.getSearch())
+        if (isEnabledSearch)
             mSwitchCompat.setChecked(true);
         else
             mSwitchCompat.setChecked(false);
 
         mSwitchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            public void onCheckedChanged(CompoundButton buttonView, final boolean isChecked) {
+                mRealm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        Checklist checklist = realm.where(Checklist.class).equalTo("id", checklistPrimaryKey).findFirst();
+                        checklist.setEnableSearchPlace(isChecked);
+                    }
+                });
+
                 if (isChecked) {
                     Toast.makeText(CheckListActivity.this, "Enable!!!", Toast.LENGTH_LONG).show();
-                    mAppSharedPreference.setSearch(true);
+                    //mAppSharedPreference.setSearch(true);
                     Intent i = new Intent(CheckListActivity.this, SearchPlacesService.class);
                     i.putExtra(SearchPlacesService.checkListIdExtra, checklistPrimaryKey);
                     startService(i);
+
+//                    Intent intent = new Intent(CheckListActivity.this, SearchPlacesService.class);
+//                    intent.putExtra(SearchPlacesService.checkListIdExtra, checklistPrimaryKey);
+//                    bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
                 } else {
                     Toast.makeText(CheckListActivity.this, "Disable!!!", Toast.LENGTH_LONG).show();
-                    mAppSharedPreference.setSearch(false);
+                    //mAppSharedPreference.setSearch(false);
                     stopService(new Intent(CheckListActivity.this,SearchPlacesService.class));
+//                    if (mBound) {
+//                        unbindService(mConnection);
+//                        mBound = false;
+//                    }
                 }
+
             }
         });
 
