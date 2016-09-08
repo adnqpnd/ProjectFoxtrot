@@ -116,8 +116,8 @@ public class SearchPlacesService extends Service implements
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand: ");
-        checkListId = intent.getLongExtra(checkListIdExtra, 0);
-        Log.d(TAG, "onStartCommand: checkListIdcheckListId " + checkListId);
+        // checkListId = intent.getLongExtra(checkListIdExtra, 0);
+        // Log.d(TAG, "onStartCommand: checkListIdcheckListId " + checkListId);
         return START_STICKY;
     }
 
@@ -206,7 +206,7 @@ public class SearchPlacesService extends Service implements
 
                     float distance = location1.distanceTo(location2);
 
-                    if (201 > 200) {
+                    if (distance > 200) {
                         Log.d(TAG, "onLocationChanged: request for new places");
                         searchForPlaces(checklist);
                     }

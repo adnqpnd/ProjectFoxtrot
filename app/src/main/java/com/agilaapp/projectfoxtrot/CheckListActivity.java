@@ -18,6 +18,8 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SwitchCompat;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +27,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -73,6 +76,11 @@ public class CheckListActivity extends AppCompatActivity{
 
     @BindView(R.id.recyclerViewChecklist)
     RecyclerView recyclerViewCheckList;
+
+    @BindView(R.id.checkListLabel)
+    EditText mCheckListLabel;
+
+
 
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
@@ -155,6 +163,32 @@ public class CheckListActivity extends AppCompatActivity{
         isEnabledSearch = mChecklist.isEnableSearchPlace();
         recyclerViewCheckList.setAdapter(checklistAdapter);
 
+        mCheckListLabel.setText(mChecklist.getName());
+
+        mCheckListLabel.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(final Editable s) {
+                mRealm.executeTransactionAsync(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        Checklist checklist = realm.where(Checklist.class).equalTo("id", checklistPrimaryKey).findFirst();
+                        checklist.setName(s.toString());
+                        realm.copyToRealm(checklist);
+                    }
+                });
+            }
+        });
+
         mFloatingButtonChecklist.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -196,25 +230,25 @@ public class CheckListActivity extends AppCompatActivity{
                     }
                 });
 
-                if (isChecked) {
-                    Toast.makeText(CheckListActivity.this, "Enable!!!", Toast.LENGTH_LONG).show();
-                    //mAppSharedPreference.setSearch(true);
-                    Intent i = new Intent(CheckListActivity.this, SearchPlacesService.class);
-                    i.putExtra(SearchPlacesService.checkListIdExtra, checklistPrimaryKey);
-                    startService(i);
-
-//                    Intent intent = new Intent(CheckListActivity.this, SearchPlacesService.class);
-//                    intent.putExtra(SearchPlacesService.checkListIdExtra, checklistPrimaryKey);
-//                    bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-                } else {
-                    Toast.makeText(CheckListActivity.this, "Disable!!!", Toast.LENGTH_LONG).show();
-                    //mAppSharedPreference.setSearch(false);
-                    stopService(new Intent(CheckListActivity.this,SearchPlacesService.class));
-//                    if (mBound) {
-//                        unbindService(mConnection);
-//                        mBound = false;
-//                    }
-                }
+//                if (isChecked) {
+//                    Toast.makeText(CheckListActivity.this, "Enable!!!", Toast.LENGTH_LONG).show();
+//                    //mAppSharedPreference.setSearch(true);
+//                    Intent i = new Intent(CheckListActivity.this, SearchPlacesService.class);
+//                    i.putExtra(SearchPlacesService.checkListIdExtra, checklistPrimaryKey);
+//                    startService(i);
+//
+////                    Intent intent = new Intent(CheckListActivity.this, SearchPlacesService.class);
+////                    intent.putExtra(SearchPlacesService.checkListIdExtra, checklistPrimaryKey);
+////                    bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+//                } else {
+//                    Toast.makeText(CheckListActivity.this, "Disable!!!", Toast.LENGTH_LONG).show();
+//                    //mAppSharedPreference.setSearch(false);
+//                    stopService(new Intent(CheckListActivity.this,SearchPlacesService.class));
+////                    if (mBound) {
+////                        unbindService(mConnection);
+////                        mBound = false;
+////                    }
+//                }
 
             }
         });
